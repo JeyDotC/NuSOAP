@@ -6,7 +6,7 @@
  *
  * @author   Dietrich Ayala <dietrich@ganx4.com>
  * @author   Scott Nichol <snichol@users.sourceforge.net>
- * @version  $Id: class.soap_parser.php,v 1.42 2010/04/26 20:15:08 snichol Exp $
+ * @version  $Id: nusoap.php,v 1.123 2010/04/26 20:15:08 snichol Exp $
  * @access   public
  */
 class nusoap_parser extends nusoap_base {
@@ -145,7 +145,7 @@ class nusoap_parser extends nusoap_base {
      * @param    string $name element name
      * @param    array $attrs associative array of attributes
      */
-    private function start_element($parser, $name, $attrs) {
+    public function start_element($parser, $name, $attrs) {
         // position in a total number of elements, starting from 0
         // update class level pos
         $pos = $this->position++;
@@ -299,7 +299,7 @@ class nusoap_parser extends nusoap_base {
      * @param    resource $parser XML parser object
      * @param    string $name element name
      */
-    private function end_element($parser, $name) {
+    public function end_element($parser, $name) {
         // position of current element is equal to the last value left in depth_array for my depth
         $pos = $this->depth_array[$this->depth--];
 
@@ -404,7 +404,7 @@ class nusoap_parser extends nusoap_base {
      * @param    resource $parser XML parser object
      * @param    string $data element content
      */
-    private function character_data($parser, $data) {
+    public function character_data($parser, $data) {
         $pos = $this->depth_array[$this->depth];
         if ($this->xml_encoding == 'UTF-8') {
             // TODO: add an option to disable this for folks who want
@@ -472,7 +472,7 @@ class nusoap_parser extends nusoap_base {
      * @param    string $typens XML type namespace to decode
      * @return	mixed PHP value
      */
-    private function decodeSimple($value, $type, $typens) {
+    public function decodeSimple($value, $type, $typens) {
         // TODO: use the namespace!
         if ((!isset($type)) || $type == 'string' || $type == 'long' || $type == 'unsignedLong') {
             return (string) $value;

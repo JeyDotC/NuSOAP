@@ -1,7 +1,7 @@
 <?php
 
 /*
-  $Id: class.nusoap_base.php,v 1.56 2010/04/26 20:15:08 snichol Exp $
+  $Id: nusoap.php,v 1.123 2010/04/26 20:15:08 snichol Exp $
 
   NuSOAP - Web Services Toolkit for PHP
 
@@ -79,7 +79,7 @@
  *
  * @author   Dietrich Ayala <dietrich@ganx4.com>
  * @author   Scott Nichol <snichol@users.sourceforge.net>
- * @version  $Id: class.nusoap_base.php,v 1.56 2010/04/26 20:15:08 snichol Exp $
+ * @version  $Id: nusoap.php,v 1.123 2010/04/26 20:15:08 snichol Exp $
  * @access   public
  */
 class nusoap_base {
@@ -89,21 +89,21 @@ class nusoap_base {
      *
      * @var string
      */
-    private $title = 'NuSOAP';
+    protected $title = 'NuSOAP';
 
     /**
      * Version for HTTP headers.
      *
      * @var string
      */
-    private $version = '0.9.5';
+    protected $version = '0.9.5';
 
     /**
      * CVS revision for HTTP headers.
      *
      * @var string
      */
-    private $revision = '$Revision: 1.56 $';
+    protected $revision = '$Revision: 1.123 $';
 
     /**
      * Current error string (manipulated by getError/setError)
@@ -179,7 +179,7 @@ class nusoap_base {
      *
      * @var      array
      */
-    private $usedNamespaces = array();
+    protected $usedNamespaces = array();
 
     /**
      * XML Schema types in an array of uri => (array of xml type => php type)
@@ -240,7 +240,7 @@ class nusoap_base {
      * @return	integer	Debug level 0-9, where 0 turns off
      * @access	public
      */
-    function getGlobalDebugLevel() {
+    static function getGlobalDebugLevel() {
         //return $GLOBALS['_transient']['static']['nusoap_base']['globalDebugLevel'];
         return self::$globalDebugLevel;
     }
@@ -251,8 +251,8 @@ class nusoap_base {
      * @param	int	$level	Debug level 0-9, where 0 turns off
      * @access	public
      */
-    function setGlobalDebugLevel($level) {
-        //$GLOBALS['_transient']['static']['nusoap_base']['globalDebugLevel'] = $level;
+    static function setGlobalDebugLevel($level) {
+//		$GLOBALS['_transient']['static']['nusoap_base']['globalDebugLevel'] = $level;
         self::$globalDebugLevel = $level;
     }
 
@@ -281,7 +281,7 @@ class nusoap_base {
      *
      * @param    string $string debug data
      */
-    private function debug($string) {
+    protected function debug($string) {
         if ($this->debugLevel > 0) {
             $this->appendDebug($this->getmicrotime() . ' ' . get_class($this) . ": $string\n");
         }
@@ -376,7 +376,7 @@ class nusoap_base {
      *
      * @return   boolean $string error string
      */
-    private function setError($str) {
+    protected function setError($str) {
         $this->error_str = $str;
     }
 
@@ -744,7 +744,7 @@ class nusoap_base {
      * @param    string $qname qname
      * @return	string contracted qname
      */
-    private function contractQname($qname) {
+    protected function contractQname($qname) {
         // get element namespace
         //$this->xdebug("Contract $qname");
         if (strrpos($qname, ':')) {
@@ -768,7 +768,7 @@ class nusoap_base {
      * @param    string $qname qname
      * @return	string expanded qname
      */
-    private function expandQname($qname) {
+    protected function expandQname($qname) {
         // get element prefix
         if (strpos($qname, ':') && !preg_match('/^http:\/\//', $qname)) {
             // get unqualified name

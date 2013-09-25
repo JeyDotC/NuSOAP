@@ -6,7 +6,7 @@
  * 
  * @author   Dietrich Ayala <dietrich@ganx4.com>
  * @author   Scott Nichol <snichol@users.sourceforge.net>
- * @version  $Id: class.wsdl.php,v 1.76 2010/04/26 20:15:08 snichol Exp $
+ * @version  $Id: nusoap.php,v 1.123 2010/04/26 20:15:08 snichol Exp $
  * @access public 
  */
 class wsdl extends nusoap_base {
@@ -750,7 +750,7 @@ class wsdl extends nusoap_base {
      * prints html description of services
      *
      */
-    private function webDescription() {
+    public function webDescription() {
         global $HTTP_SERVER_VARS;
 
         if (isset($_SERVER)) {

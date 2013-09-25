@@ -17,7 +17,7 @@
  *
  * @author   Dietrich Ayala <dietrich@ganx4.com>
  * @author   Scott Nichol <snichol@users.sourceforge.net>
- * @version  $Id: class.soapclient.php,v 1.69 2010/04/26 20:15:08 snichol Exp $
+ * @version  $Id: nusoap.php,v 1.123 2010/04/26 20:15:08 snichol Exp $
  * @access   public
  */
 class nusoap_client extends nusoap_base {
@@ -488,7 +488,7 @@ class nusoap_client extends nusoap_base {
      * @param	string	$data		unprocessed response data from server
      * @return	mixed	value of the message, decoded into a PHP type
      */
-    private function parseResponse($headers, $data) {
+    protected function parseResponse($headers, $data) {
         $this->debug('Entering parseResponse() for data of length ' . strlen($data) . ' headers:');
         $this->appendDebug($this->varDump($headers));
         if (!isset($headers['content-type'])) {
@@ -813,7 +813,7 @@ class nusoap_client extends nusoap_base {
      * @param string $soapmsg The SOAP payload
      * @return string The HTTP body, which includes the SOAP payload
      */
-    private function getHTTPBody($soapmsg) {
+    protected function getHTTPBody($soapmsg) {
         return $soapmsg;
     }
 
@@ -824,7 +824,7 @@ class nusoap_client extends nusoap_base {
      *
      * @return string the HTTP content type for the current request.
      */
-    private function getHTTPContentType() {
+    protected function getHTTPContentType() {
         return 'text/xml';
     }
 
@@ -836,7 +836,7 @@ class nusoap_client extends nusoap_base {
      *
      * @return string the HTTP content type charset for the current request.
      */
-    private function getHTTPContentTypeCharset() {
+    protected function getHTTPContentTypeCharset() {
         return $this->soap_defencoding;
     }
 

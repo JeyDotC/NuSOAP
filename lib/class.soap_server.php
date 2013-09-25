@@ -152,7 +152,7 @@ class nusoap_server extends nusoap_base {
      * wsdl instance (if one)
      * @var mixed
      */
-    private $wsdl = false;
+    public $wsdl = false;
 
     /**
      * URL for WSDL (if one)
@@ -556,7 +556,8 @@ class nusoap_server extends nusoap_base {
 
         // does method exist?
         if ($class == '') {
-            if (!function_exists($this->methodname)) {
+            $functionExists = function_exists($this->methodname);
+            if (!$functionExists && (isset($this->opData) && !isset($this->operations[$this->methodname]["handler"]))) {
                 $this->debug("in invoke_method, function '$this->methodname' not found!");
                 $this->result = 'fault: method not found';
                 $this->fault('SOAP-ENV:Client', "method '$this->methodname'('$orig_methodname') not defined in service('$try_class' '$delim')");
@@ -589,8 +590,12 @@ class nusoap_server extends nusoap_base {
         $this->debug("in invoke_method, calling '$this->methodname'");
 
         if ($class == '') {
-            $this->debug('in invoke_method, calling function using call_user_func_array()');
-            $call_arg = "$this->methodname"; // straight assignment changes $this->methodname to lower case after call_user_func_array()
+            if ($functionExists) {
+                $this->debug('in invoke_method, calling function using call_user_func_array()');
+                $call_arg = "$this->methodname"; // straight assignment changes $this->methodname to lower case after call_user_func_array()
+            } else {
+                $call_arg = $this->operations[$this->methodname]["handler"];
+            }
         } elseif ($delim == '..') {
             $this->debug('in invoke_method, calling class method using call_user_func_array()');
             $call_arg = array($class, $method);
@@ -815,7 +820,7 @@ class nusoap_server extends nusoap_base {
      * @param	string	$data		unprocessed request data from client
      * @return	mixed	value of the message, decoded into a PHP type
      */
-    private function parseRequest($headers, $data) {
+    protected function parseRequest($headers, $data) {
         $this->debug('Entering parseRequest() for data of length ' . strlen($data) . ' headers:');
         $this->appendDebug($this->varDump($headers));
         if (!isset($headers['content-type'])) {
@@ -870,7 +875,7 @@ class nusoap_server extends nusoap_base {
      * @param string $soapmsg The SOAP payload
      * @return string The HTTP body, which includes the SOAP payload
      */
-    private function getHTTPBody($soapmsg) {
+    protected function getHTTPBody($soapmsg) {
         return $soapmsg;
     }
 
@@ -881,7 +886,7 @@ class nusoap_server extends nusoap_base {
      *
      * @return string the HTTP content type for the current response.
      */
-    private function getHTTPContentType() {
+    protected function getHTTPContentType() {
         return 'text/xml';
     }
 
@@ -893,21 +898,8 @@ class nusoap_server extends nusoap_base {
      *
      * @return string the HTTP content type charset for the current response.
      */
-    private function getHTTPContentTypeCharset() {
+    protected function getHTTPContentTypeCharset() {
         return $this->soap_defencoding;
-    }
-
-    /**
-     * add a method to the dispatch map (this has been replaced by the register method)
-     *
-     * @param    string $methodname
-     * @param    string $in array of input values
-     * @param    string $out array of output values
-     * @access   public
-     * @deprecated
-     */
-    function add_to_map($methodname, $in, $out) {
-        $this->operations[$methodname] = array('name' => $methodname, 'in' => $in, 'out' => $out);
     }
 
     /**
@@ -928,20 +920,33 @@ class nusoap_server extends nusoap_base {
         global $HTTP_SERVER_VARS;
 
         if ($this->externalWSDLURL) {
-            throw new Exception('You cannot bind to an external WSDL file, and register methods outside of it! Please choose either WSDL or no WSDL.');
+            throw new BadMethodCallException('You cannot bind to an external WSDL file, and register methods outside of it! Please choose either WSDL or no WSDL.');
         }
         if (!$name) {
-            throw new Exception('You must specify a name when you register an operation');
+            throw new BadMethodCallException('You must specify a name when you register an operation');
         }
         if (!is_array($in)) {
-            throw new Exception('You must provide an array for operation inputs');
+            throw new BadMethodCallException('You must provide an array for operation inputs');
         }
         if (!is_array($out)) {
-            throw new Exception('You must provide an array for operation outputs');
+            throw new BadMethodCallException('You must provide an array for operation outputs');
         }
         if (false == $namespace) {
             
         }
+
+        if (is_array($name)) {
+            $operation = array(
+                "name" => $name["name"],
+                "handler" => $name["handler"],
+            );
+        } else {
+            $operation = array(
+                "name" => $name,
+                "handler" => $name,
+            );
+        }
+
         if (false == $soapaction) {
             if (isset($_SERVER)) {
                 $SERVER_NAME = $_SERVER['SERVER_NAME'];
@@ -959,7 +964,7 @@ class nusoap_server extends nusoap_base {
             } else {
                 $SCHEME = 'http';
             }
-            $soapaction = "$SCHEME://$SERVER_NAME$SCRIPT_NAME/$name";
+            $soapaction = "$SCHEME://$SERVER_NAME$SCRIPT_NAME/{$operation["name"]}";
         }
         if (false == $style) {
             $style = "rpc";
@@ -971,15 +976,17 @@ class nusoap_server extends nusoap_base {
             $encodingStyle = 'http://schemas.xmlsoap.org/soap/encoding/';
         }
 
-        $this->operations[$name] = array(
-            'name' => $name,
+        $this->operations[$operation["name"]] = array(
+            'name' => $operation["name"],
+            "handler" => $operation["handler"],
             'in' => $in,
             'out' => $out,
             'namespace' => $namespace,
             'soapaction' => $soapaction,
-            'style' => $style);
+            'style' => $style
+        );
         if ($this->wsdl) {
-            $this->wsdl->addOperation($name, $in, $out, $namespace, $soapaction, $style, $use, $documentation, $encodingStyle);
+            $this->wsdl->addOperation($operation["name"], $in, $out, $namespace, $soapaction, $style, $use, $documentation, $encodingStyle);
         }
         return true;
     }

@@ -6,7 +6,7 @@
  *
  * @author   Dietrich Ayala <dietrich@ganx4.com>
  * @author   Scott Nichol <snichol@users.sourceforge.net>
- * @version  $Id: class.xmlschema.php,v 1.53 2010/04/26 20:15:08 snichol Exp $
+ * @version  $Id: nusoap.php,v 1.123 2010/04/26 20:15:08 snichol Exp $
  * @access   public
  */
 class nusoap_xmlschema extends nusoap_base {
@@ -165,7 +165,7 @@ class nusoap_xmlschema extends nusoap_base {
      * @param    string $name element name
      * @param    string $attrs associative array of attributes
      */
-    private function schemaStartElement($parser, $name, $attrs) {
+    function schemaStartElement($parser, $name, $attrs) {
 
         // position in the total number of elements, starting from 0
         $pos = $this->position++;
@@ -491,7 +491,7 @@ class nusoap_xmlschema extends nusoap_base {
      * @param    string $parser XML parser object
      * @param    string $name element name
      */
-    private function schemaEndElement($parser, $name) {
+    function schemaEndElement($parser, $name) {
         // bring depth down a notch
         $this->depth--;
         // position of current element is equal to the last value left in depth_array for my depth
@@ -529,7 +529,7 @@ class nusoap_xmlschema extends nusoap_base {
      * @param    string $parser XML parser object
      * @param    string $data element content
      */
-    private function schemaCharacterData($parser, $data) {
+    function schemaCharacterData($parser, $data) {
         $pos = $this->depth_array[$this->depth - 1];
         $this->message[$pos]['cdata'] .= $data;
     }
