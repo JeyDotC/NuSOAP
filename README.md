@@ -56,3 +56,10 @@ Now the classes that used `die()` as their failure mechanism throw exceptions in
 Next step will be to replace the 'magic return value' from nusoap_client to throw
 an appropriate exception.
 
+## Class files get included instead of copying the classes in a single file ##
+
+## Removed Trailing ?> ##
+
+Having a trailing `?>` in PHP files uses to cause problems with proxy generation
+based libraries like [Go-AOP](https://github.com/lisachenko/go-aop-php/).
+

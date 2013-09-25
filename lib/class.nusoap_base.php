@@ -993,5 +993,3 @@ function usleepWindows($usec) {
         $timePassed = 1000000 * ($stop['sec'] - $start['sec']) + $stop['usec'] - $start['usec'];
     } while ($timePassed < $usec);
 }
-
-?>

@@ -986,4 +986,3 @@ if (!extension_loaded('soap')) {
     }
 
 }
-?>
