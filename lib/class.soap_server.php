@@ -225,9 +225,6 @@ class nusoap_server extends nusoap_base {
             }
             $this->appendDebug($this->wsdl->getDebug());
             $this->wsdl->clearDebug();
-            if ($err = $this->wsdl->getError()) {
-                throw new Exception('WSDL ERROR: ' . $err);
-            }
         }
     }
 
@@ -258,13 +255,13 @@ class nusoap_server extends nusoap_base {
         $this->debug("In service, request method=$rm query string=$qs strlen(\$data)=" . strlen($data));
 
         if ($rm == 'POST') {
-            $this->debug("In service, invoke the request");
-            $this->parse_request($data);
-            if (!$this->fault) {
+            try {
+                $this->debug("In service, invoke the request");
+                $this->parse_request($data);
                 $this->invoke_method();
-            }
-            if (!$this->fault) {
                 $this->serialize_return();
+            } catch (Exception $ex) {
+                $this->fault(1, $ex->getMessage());
             }
             $this->send_response();
         } elseif (preg_match('/wsdl/', $qs)) {
@@ -422,7 +419,7 @@ class nusoap_server extends nusoap_base {
             }
         } else {
             $this->debug("In parse_http_headers, HTTP headers not accessible");
-            $this->setError("HTTP headers not accessible");
+            throw new Exception("HTTP headers not accessible");
         }
     }
 
@@ -653,11 +650,6 @@ class nusoap_server extends nusoap_base {
                 $return_val = $this->wsdl->serializeRPCParameters($this->methodname, 'output', $opParams);
                 $this->appendDebug($this->wsdl->getDebug());
                 $this->wsdl->clearDebug();
-                if ($errstr = $this->wsdl->getError()) {
-                    $this->debug('got wsdl error: ' . $errstr);
-                    $this->fault('SOAP-ENV:Server', 'unable to serialize result');
-                    return;
-                }
             } else {
                 if (isset($this->methodreturn)) {
                     $return_val = $this->serialize_val($this->methodreturn, 'return');
@@ -824,12 +816,10 @@ class nusoap_server extends nusoap_base {
         $this->debug('Entering parseRequest() for data of length ' . strlen($data) . ' headers:');
         $this->appendDebug($this->varDump($headers));
         if (!isset($headers['content-type'])) {
-            $this->setError('Request not of type text/xml (no content-type header)');
-            return false;
+            throw new Exception('Request not of type text/xml (no content-type header)');
         }
         if (!strstr($headers['content-type'], 'text/xml')) {
-            $this->setError('Request not of type text/xml');
-            return false;
+            throw new Exception('Request not of type text/xml');
         }
         if (strpos($headers['content-type'], '=')) {
             $enc = str_replace('"', '', substr(strstr($headers["content-type"], '='), 1));
@@ -849,24 +839,18 @@ class nusoap_server extends nusoap_base {
         // parser debug
         $this->debug("parser debug: \n" . $parser->getDebug());
         // if fault occurred during message parsing
-        if ($err = $parser->getError()) {
-            $this->result = 'fault: error in msg parsing: ' . $err;
-            $this->fault('SOAP-ENV:Client', "error in msg parsing:\n" . $err);
-            // else successfully parsed request into soapval object
-        } else {
-            // get/set methodname
-            $this->methodURI = $parser->root_struct_namespace;
-            $this->methodname = $parser->root_struct_name;
-            $this->debug('methodname: ' . $this->methodname . ' methodURI: ' . $this->methodURI);
-            $this->debug('calling parser->get_soapbody()');
-            $this->methodparams = $parser->get_soapbody();
-            // get SOAP headers
-            $this->requestHeaders = $parser->getHeaders();
-            // get SOAP Header
-            $this->requestHeader = $parser->get_soapheader();
-            // add document for doclit support
-            $this->document = $parser->document;
-        }
+        // get/set methodname
+        $this->methodURI = $parser->root_struct_namespace;
+        $this->methodname = $parser->root_struct_name;
+        $this->debug('methodname: ' . $this->methodname . ' methodURI: ' . $this->methodURI);
+        $this->debug('calling parser->get_soapbody()');
+        $this->methodparams = $parser->get_soapbody();
+        // get SOAP headers
+        $this->requestHeaders = $parser->getHeaders();
+        // get SOAP Header
+        $this->requestHeader = $parser->get_soapheader();
+        // add document for doclit support
+        $this->document = $parser->document;
     }
 
     /**
@@ -957,7 +941,7 @@ class nusoap_server extends nusoap_base {
                 $SCRIPT_NAME = isset($HTTP_SERVER_VARS['PHP_SELF']) ? $HTTP_SERVER_VARS['PHP_SELF'] : $HTTP_SERVER_VARS['SCRIPT_NAME'];
                 $HTTPS = isset($HTTP_SERVER_VARS['HTTPS']) ? $HTTP_SERVER_VARS['HTTPS'] : 'off';
             } else {
-                $this->setError("Neither _SERVER nor HTTP_SERVER_VARS is available");
+                throw new Exception("Neither _SERVER nor HTTP_SERVER_VARS is available");
             }
             if ($HTTPS == '1' || $HTTPS == 'on') {
                 $SCHEME = 'https';
@@ -1034,7 +1018,7 @@ class nusoap_server extends nusoap_base {
             $SCRIPT_NAME = isset($HTTP_SERVER_VARS['PHP_SELF']) ? $HTTP_SERVER_VARS['PHP_SELF'] : $HTTP_SERVER_VARS['SCRIPT_NAME'];
             $HTTPS = isset($HTTP_SERVER_VARS['HTTPS']) ? $HTTP_SERVER_VARS['HTTPS'] : 'off';
         } else {
-            $this->setError("Neither _SERVER nor HTTP_SERVER_VARS is available");
+            throw new Exception("Neither _SERVER nor HTTP_SERVER_VARS is available");
         }
         // If server name has port number attached then strip it (else port number gets duplicated in WSDL output) (occurred using lighttpd and FastCGI)
         $colon = strpos($SERVER_NAME, ":");

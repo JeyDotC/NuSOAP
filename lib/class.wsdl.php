@@ -77,8 +77,9 @@ class wsdl extends nusoap_base {
         $this->proxypassword = $proxypassword;
         $this->timeout = $timeout;
         $this->response_timeout = $response_timeout;
-        if (is_array($curl_options))
+        if (is_array($curl_options)) {
             $this->curl_options = $curl_options;
+        }
         $this->use_curl = $use_curl;
         $this->fetchWSDL($wsdl);
     }
@@ -165,12 +166,10 @@ class wsdl extends nusoap_base {
             if (isset($bindingData['operations']) && is_array($bindingData['operations'])) {
                 foreach ($bindingData['operations'] as $operation => $data) {
                     $this->debug('post-parse data gathering for ' . $operation);
-                    $this->bindings[$binding]['operations'][$operation]['input'] =
-                            isset($this->bindings[$binding]['operations'][$operation]['input']) ?
+                    $this->bindings[$binding]['operations'][$operation]['input'] = isset($this->bindings[$binding]['operations'][$operation]['input']) ?
                             array_merge($this->bindings[$binding]['operations'][$operation]['input'], $this->portTypes[$bindingData['portType']][$operation]['input']) :
                             $this->portTypes[$bindingData['portType']][$operation]['input'];
-                    $this->bindings[$binding]['operations'][$operation]['output'] =
-                            isset($this->bindings[$binding]['operations'][$operation]['output']) ?
+                    $this->bindings[$binding]['operations'][$operation]['output'] = isset($this->bindings[$binding]['operations'][$operation]['output']) ?
                             array_merge($this->bindings[$binding]['operations'][$operation]['output'], $this->portTypes[$bindingData['portType']][$operation]['output']) :
                             $this->portTypes[$bindingData['portType']][$operation]['output'];
                     if (isset($this->messages[$this->bindings[$binding]['operations'][$operation]['input']['message']])) {
@@ -202,8 +201,7 @@ class wsdl extends nusoap_base {
 
         if ($wsdl == '') {
             $this->debug('no wsdl passed to parseWSDL()!!');
-            $this->setError('no wsdl passed to parseWSDL()!!');
-            return false;
+            throw new Exception('no wsdl passed to parseWSDL()!!');
         }
 
         // parse $wsdl for url format
@@ -213,27 +211,27 @@ class wsdl extends nusoap_base {
             $this->debug('getting WSDL http(s) URL ' . $wsdl);
             // get wsdl
             $tr = new soap_transport_http($wsdl, $this->curl_options, $this->use_curl);
-            $tr->request_method = 'GET';
-            $tr->useSOAPAction = false;
-            if ($this->proxyhost && $this->proxyport) {
-                $tr->setProxy($this->proxyhost, $this->proxyport, $this->proxyusername, $this->proxypassword);
-            }
-            if ($this->authtype != '') {
-                $tr->setCredentials($this->username, $this->password, $this->authtype, array(), $this->certRequest);
-            }
-            $tr->setEncoding('gzip, deflate');
-            $wsdl_string = $tr->send('', $this->timeout, $this->response_timeout);
-            //$this->debug("WSDL request\n" . $tr->outgoing_payload);
-            //$this->debug("WSDL response\n" . $tr->incoming_payload);
-            $this->appendDebug($tr->getDebug());
-            // catch errors
-            if ($err = $tr->getError()) {
-                $errstr = 'Getting ' . $wsdl . ' - HTTP ERROR: ' . $err;
+            try {
+                $tr->request_method = 'GET';
+                $tr->useSOAPAction = false;
+                if ($this->proxyhost && $this->proxyport) {
+                    $tr->setProxy($this->proxyhost, $this->proxyport, $this->proxyusername, $this->proxypassword);
+                }
+                if ($this->authtype != '') {
+                    $tr->setCredentials($this->username, $this->password, $this->authtype, array(), $this->certRequest);
+                }
+                $tr->setEncoding('gzip, deflate');
+                $wsdl_string = $tr->send('', $this->timeout, $this->response_timeout);
+                //$this->debug("WSDL request\n" . $tr->outgoing_payload);
+                //$this->debug("WSDL response\n" . $tr->incoming_payload);
+                $this->appendDebug($tr->getDebug());
+                // catch errors
+            } catch (Exception $ex) {
+                $errstr = 'Getting ' . $wsdl . ' - HTTP ERROR: ' . $ex->getMessage();
                 $this->debug($errstr);
-                $this->setError($errstr);
-                unset($tr);
-                return false;
+                throw new Exception($errstr);
             }
+
             unset($tr);
             $this->debug("got WSDL URL");
         } else {
@@ -253,8 +251,7 @@ class wsdl extends nusoap_base {
             } else {
                 $errstr = "Bad path to WSDL file $path";
                 $this->debug($errstr);
-                $this->setError($errstr);
-                return false;
+                throw new Exception($errstr);
             }
         }
         $this->debug('Parse WSDL');
@@ -277,16 +274,12 @@ class wsdl extends nusoap_base {
             );
             $this->debug($errstr);
             $this->debug("XML payload:\n" . $wsdl_string);
-            $this->setError($errstr);
-            return false;
+            throw new Exception($errstr);
         }
         // free the parser
         xml_parser_free($this->parser);
         $this->debug('Parsing WSDL done');
-        // catch wsdl parse errors
-        if ($this->getError()) {
-            return false;
-        }
+        
         return true;
     }
 
@@ -758,7 +751,7 @@ class wsdl extends nusoap_base {
         } elseif (isset($HTTP_SERVER_VARS)) {
             $PHP_SELF = $HTTP_SERVER_VARS['PHP_SELF'];
         } else {
-            $this->setError("Neither _SERVER nor HTTP_SERVER_VARS is available");
+            throw new Exception("Neither _SERVER nor HTTP_SERVER_VARS is available");
         }
 
         $b = '
@@ -1110,13 +1103,11 @@ class wsdl extends nusoap_base {
 
         if ($direction != 'input' && $direction != 'output') {
             $this->debug('The value of the \$direction argument needs to be either "input" or "output"');
-            $this->setError('The value of the \$direction argument needs to be either "input" or "output"');
-            return false;
+            throw new Exception('The value of the \$direction argument needs to be either "input" or "output"');
         }
         if (!$opData = $this->getOperationData($operation, $bindingType)) {
             $this->debug('Unable to retrieve WSDL data for operation: ' . $operation . ' bindingType: ' . $bindingType);
-            $this->setError('Unable to retrieve WSDL data for operation: ' . $operation . ' bindingType: ' . $bindingType);
-            return false;
+            throw new Exception('Unable to retrieve WSDL data for operation: ' . $operation . ' bindingType: ' . $bindingType);
         }
         $this->debug('in serializeRPCParameters: opData:');
         $this->appendDebug($this->varDump($opData));
@@ -1211,13 +1202,11 @@ class wsdl extends nusoap_base {
 
         if ($direction != 'input' && $direction != 'output') {
             $this->debug('The value of the \$direction argument needs to be either "input" or "output"');
-            $this->setError('The value of the \$direction argument needs to be either "input" or "output"');
-            return false;
+            throw new Exception('The value of the \$direction argument needs to be either "input" or "output"');
         }
         if (!$opData = $this->getOperationData($operation)) {
             $this->debug('Unable to retrieve WSDL data for operation: ' . $operation);
-            $this->setError('Unable to retrieve WSDL data for operation: ' . $operation);
-            return false;
+            throw new Exception('Unable to retrieve WSDL data for operation: ' . $operation);
         }
         $this->debug('opData:');
         $this->appendDebug($this->varDump($opData));
@@ -1422,9 +1411,8 @@ class wsdl extends nusoap_base {
             $uqType = $type;
         }
         if (!$typeDef = $this->getTypeDef($uqType, $ns)) {
-            $this->setError("$type ($uqType) is not a supported type.");
             $this->debug("in serializeType: $type ($uqType) is not a supported type.");
-            return false;
+            throw new Exception("$type ($uqType) is not a supported type.");
         } else {
             $this->debug("in serializeType: found typeDef");
             $this->appendDebug('typeDef=' . $this->varDump($typeDef));
@@ -1433,9 +1421,8 @@ class wsdl extends nusoap_base {
             }
         }
         if (!isset($typeDef['phpType'])) {
-            $this->setError("$type ($uqType) has no phpType.");
             $this->debug("in serializeType: $type ($uqType) has no phpType.");
-            return false;
+            throw new Exception("$type ($uqType) has no phpType.");
         }
         $phpType = $typeDef['phpType'];
         $this->debug("in serializeType: uqType: $uqType, ns: $ns, phptype: $phpType, arrayType: " . (isset($typeDef['arrayType']) ? $typeDef['arrayType'] : ''));
@@ -1871,28 +1858,27 @@ class wsdl extends nusoap_base {
         }
 
         // get binding
-        $this->bindings[$this->serviceName . 'Binding']['operations'][$name] =
-                array(
-                    'name' => $name,
-                    'binding' => $this->serviceName . 'Binding',
-                    'endpoint' => $this->endpoint,
-                    'soapAction' => $soapaction,
-                    'style' => $style,
-                    'input' => array(
-                        'use' => $use,
-                        'namespace' => $namespace,
-                        'encodingStyle' => $encodingStyle,
-                        'message' => $name . 'Request',
-                        'parts' => $in),
-                    'output' => array(
-                        'use' => $use,
-                        'namespace' => $namespace,
-                        'encodingStyle' => $encodingStyle,
-                        'message' => $name . 'Response',
-                        'parts' => $out),
-                    'namespace' => $namespace,
-                    'transport' => 'http://schemas.xmlsoap.org/soap/http',
-                    'documentation' => $documentation);
+        $this->bindings[$this->serviceName . 'Binding']['operations'][$name] = array(
+            'name' => $name,
+            'binding' => $this->serviceName . 'Binding',
+            'endpoint' => $this->endpoint,
+            'soapAction' => $soapaction,
+            'style' => $style,
+            'input' => array(
+                'use' => $use,
+                'namespace' => $namespace,
+                'encodingStyle' => $encodingStyle,
+                'message' => $name . 'Request',
+                'parts' => $in),
+            'output' => array(
+                'use' => $use,
+                'namespace' => $namespace,
+                'encodingStyle' => $encodingStyle,
+                'message' => $name . 'Response',
+                'parts' => $out),
+            'namespace' => $namespace,
+            'transport' => 'http://schemas.xmlsoap.org/soap/http',
+            'documentation' => $documentation);
         // add portTypes
         // add messages
         if ($in) {

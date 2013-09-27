@@ -253,8 +253,7 @@ class nusoap_client_mime extends nusoap_client {
                 return $return;
             }
 
-            $this->setError('No root part found in multipart/related content');
-            return '';
+            throw new Exception('No root part found in multipart/related content');
         }
         $this->debug('Not multipart/related');
         return parent::parseResponse($headers, $data);
@@ -481,8 +480,7 @@ class nusoap_server_mime extends nusoap_server {
                 return $return;
             }
 
-            $this->setError('No root part found in multipart/related content');
-            return;
+            throw new Exception('No root part found in multipart/related content');
         }
         $this->debug('Not multipart/related');
         return parent::parseRequest($headers, $data);

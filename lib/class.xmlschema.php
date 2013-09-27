@@ -86,9 +86,8 @@ class nusoap_xmlschema extends nusoap_base {
             $xmlStr = @join("", @file($xml));
             if ($xmlStr == "") {
                 $msg = 'Error reading XML from ' . $xml;
-                $this->setError($msg);
                 $this->debug($msg);
-                return false;
+                throw new Exception($msg);
             } else {
                 $this->debug("parsing $xml");
                 $this->parseString($xmlStr, $type);
@@ -107,39 +106,39 @@ class nusoap_xmlschema extends nusoap_base {
      */
     private function parseString($xml, $type) {
         // parse xml string
-        if ($xml != "") {
-
-            // Create an XML parser.
-            $this->parser = xml_parser_create();
-            // Set the options for parsing the XML data.
-            xml_parser_set_option($this->parser, XML_OPTION_CASE_FOLDING, 0);
-
-            // Set the object for the parser.
-            xml_set_object($this->parser, $this);
-
-            // Set the element handlers for the parser.
-            if ($type == "schema") {
-                xml_set_element_handler($this->parser, 'schemaStartElement', 'schemaEndElement');
-                xml_set_character_data_handler($this->parser, 'schemaCharacterData');
-            } elseif ($type == "xml") {
-                xml_set_element_handler($this->parser, 'xmlStartElement', 'xmlEndElement');
-                xml_set_character_data_handler($this->parser, 'xmlCharacterData');
-            }
-
-            // Parse the XML file.
-            if (!xml_parse($this->parser, $xml, true)) {
-                // Display an error message.
-                $errstr = sprintf('XML error parsing XML schema on line %d: %s', xml_get_current_line_number($this->parser), xml_error_string(xml_get_error_code($this->parser))
-                );
-                $this->debug($errstr);
-                $this->debug("XML payload:\n" . $xml);
-                $this->setError($errstr);
-            }
-
-            xml_parser_free($this->parser);
-        } else {
+        if (empty($xml)) {
             $this->debug('no xml passed to parseString()!!');
-            $this->setError('no xml passed to parseString()!!');
+            throw new Exception('no xml passed to parseString()!!');
+        }
+
+        // Create an XML parser.
+        $this->parser = xml_parser_create();
+        // Set the options for parsing the XML data.
+        xml_parser_set_option($this->parser, XML_OPTION_CASE_FOLDING, 0);
+
+        // Set the object for the parser.
+        xml_set_object($this->parser, $this);
+
+        // Set the element handlers for the parser.
+        if ($type == "schema") {
+            xml_set_element_handler($this->parser, 'schemaStartElement', 'schemaEndElement');
+            xml_set_character_data_handler($this->parser, 'schemaCharacterData');
+        } elseif ($type == "xml") {
+            xml_set_element_handler($this->parser, 'xmlStartElement', 'xmlEndElement');
+            xml_set_character_data_handler($this->parser, 'xmlCharacterData');
+        }
+
+        $parsed = xml_parse($this->parser, $xml, true);
+        xml_parser_free($this->parser);
+
+        // Parse the XML file.
+        if (!$parsed) {
+            // Display an error message.
+            $errstr = sprintf('XML error parsing XML schema on line %d: %s', xml_get_current_line_number($this->parser), xml_error_string(xml_get_error_code($this->parser))
+            );
+            $this->debug($errstr);
+            $this->debug("XML payload:\n" . $xml);
+            throw new Exception($errstr);
         }
     }
 
