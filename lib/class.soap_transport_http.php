@@ -86,7 +86,7 @@ class soap_transport_http extends nusoap_base {
      * @param string $name The name of the header
      * @param string $value The value of the header
      */
-    private function setHeader($name, $value) {
+    public function setHeader($name, $value) {
         $this->outgoing_headers[$name] = $value;
         $this->debug("set header $name: $value");
     }
@@ -96,7 +96,7 @@ class soap_transport_http extends nusoap_base {
      *
      * @param string $name The name of the header
      */
-    private function unsetHeader($name) {
+    public function unsetHeader($name) {
         if (isset($this->outgoing_headers[$name])) {
             $this->debug("unset header $name");
             unset($this->outgoing_headers[$name]);
