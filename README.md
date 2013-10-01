@@ -53,8 +53,10 @@ There is probably more unresolved issues.
 
 Now the classes that used `die()` as their failure mechanism throw exceptions instead.
 
-Next step will be to replace the 'magic return value' from nusoap_client to throw
-an appropriate exception.
+## Throw exceptions instead of return magic values ##
+
+Now there is no set/get error methods anymore as any code using them is inaccessible
+due to exception throwing.
 
 ## Class files get included instead of copying the classes in a single file ##
 

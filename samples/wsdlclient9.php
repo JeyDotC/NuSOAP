@@ -18,10 +18,6 @@ $proxypassword = isset($_POST['proxypassword']) ? $_POST['proxypassword'] : '';
 echo 'You must set your username and password in the source';
 exit();
 $client = new nusoap_client("http://staging.mappoint.net/standard-30/mappoint.wsdl", 'wsdl', $proxyhost, $proxyport, $proxyusername, $proxypassword);
-$err = $client->getError();
-if ($err) {
-    echo '<h2>Constructor error</h2><pre>' . $err . '</pre>';
-}
 $client->setCredentials($username, $password, 'digest');
 $client->useHTTPPersistentConnection();
 $view = array(

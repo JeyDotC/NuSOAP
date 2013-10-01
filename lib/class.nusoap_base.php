@@ -359,28 +359,6 @@ class nusoap_base {
     }
 
     /**
-     * returns error string if present
-     *
-     * @return   mixed error string or false
-     * @access   public
-     */
-    function getError() {
-        if ($this->error_str != '') {
-            return $this->error_str;
-        }
-        return false;
-    }
-
-    /**
-     * sets error string
-     *
-     * @return   boolean $string error string
-     */
-    protected function setError($str) {
-        $this->error_str = $str;
-    }
-
-    /**
      * detect if array is a simple array or a struct (associative array)
      *
      * @param	mixed	$val	The PHP array

@@ -161,7 +161,6 @@ class nusoap_client extends nusoap_base {
     function call($operation, $params = array(), $namespace = 'http://tempuri.org', $soapAction = '', $headers = false, $rpcParams = null, $style = 'rpc', $use = 'encoded') {
         $this->operation = $operation;
         $this->fault = false;
-        $this->setError('');
         $this->request = '';
         $this->response = '';
         $this->responseData = '';
@@ -290,7 +289,6 @@ class nusoap_client extends nusoap_base {
         // fault?
         if (is_array($return) && isset($return['faultcode'])) {
             $this->debug('got fault');
-            $this->setError($return['faultcode'] . ': ' . $return['faultstring']);
             $this->fault = true;
             foreach ($return as $k => $v) {
                 $this->$k = $v;
@@ -329,7 +327,7 @@ class nusoap_client extends nusoap_base {
         $this->appendDebug($this->wsdl->getDebug());
         $this->wsdl->clearDebug();
         $this->debug('checkWSDL');
-        // catch errors
+        
         if ($this->operations = $this->wsdl->getOperations($this->portName, 'soap')) {
             $this->appendDebug($this->wsdl->getDebug());
             $this->wsdl->clearDebug();
