@@ -7,6 +7,10 @@
  */
 class nusoap_server_autodiscover extends soap_server {
 
+    const ENDPOINT_USE_NAMESPACE = 1;
+    const ENDPOINT_GESS_FROM_REQUEST = 2;
+    const ENDPOINT_USE = 3;
+
     private $uri;
 
     /**
@@ -26,11 +30,14 @@ class nusoap_server_autodiscover extends soap_server {
         "string" => "xsd:string",
         "bool" => "xsd:bool",
         "boolean" => "xsd:bool",
+        "stdClass" => "xsd:anyType",
+        "\\stdClass" => "xsd:anyType",
         "mixed" => "xsd:anyType",
     );
 
     function __construct($uri, $class, $name = "") {
         $this->uri = $uri;
+
         if ($class instanceof ReflectionClass) {
             $this->class = $class;
         } else {
@@ -43,10 +50,16 @@ class nusoap_server_autodiscover extends soap_server {
         }
     }
 
-    public function generate() {
-        $this->serviceInstance = $this->class->newInstanceArgs(func_get_args());
+    public function generate($endPointStyle = self::ENDPOINT_USE_NAMESPACE, $endpoint=false) {
+        $this->serviceInstance = $this->class->newInstance();
 
-        $this->configureWSDL($this->name, $this->uri);
+        if($endPointStyle == self::ENDPOINT_USE_NAMESPACE){
+            $endpoint = $this->uri;
+        }else if($endPointStyle == self::ENDPOINT_GESS_FROM_REQUEST){
+            $endpoint = false;
+        }
+        
+        $this->configureWSDL($this->name, $this->uri, $endpoint);
         $this->wsdl->bindings[$this->name . 'Binding']['portType'] = $this->name;
 
         $this->registerServices();
@@ -78,13 +91,16 @@ class nusoap_server_autodiscover extends soap_server {
             }
         }
 
+        $description = isset($metadata["description"]) ? $metadata["description"] : "";
+        $longDescription = isset($metadata["longDescription"]) ? $metadata["longDescription"] : "";
+
         $this->register(array(
             "name" => $method->name,
             "handler" => array(
                 new nusoap_soap_action_handler
                         ($this->serviceInstance, $method->name, $params, $this->mappedComplexTypes, $this->mappedArrays, $this->knownPrimitiveTypes),
                 "invoke"
-            )), $params, $return, $this->uri, false, false, false, "{$metadata["description"]} {$metadata["longDescription"]}");
+            )), $params, $return, $this->uri, false, false, false, "$description $longDescription");
     }
 
     private function handleType($type) {
@@ -114,11 +130,13 @@ class nusoap_server_autodiscover extends soap_server {
             $structure = array();
             foreach ($type->getProperties(ReflectionProperty::IS_PUBLIC & ~ReflectionProperty::IS_STATIC) as /* @var $property ReflectionProperty */ $property) {
                 $metadata = nusoap_comment_parser::parse($property->getDocComment());
-
                 $typeName = $this->handleType(isset($metadata["var"]) ? $metadata["var"]["type"] : "mixed");
                 $structure[$property->name] = array(
                     "type" => $typeName,
                 );
+                if (!$this->isRequired($metadata)) {
+                    $structure[$property->name]["nillable"] = 'true';
+                }
             }
             $this->wsdl->addComplexType($type->getShortName(), 'complexType', 'struct', 'all', '', $structure);
             $this->mappedComplexTypes[$wsdlType] = array(
@@ -128,6 +146,10 @@ class nusoap_server_autodiscover extends soap_server {
         }
 
         return $wsdlType;
+    }
+
+    private function isRequired($metadata) {
+        return (isset($metadata["var"]) && isset($metadata["var"]["description"]) && strpos($metadata["var"]["description"], "{@required}") !== false);
     }
 
     private function registerArray($itemType) {
@@ -178,9 +200,7 @@ class nusoap_soap_action_handler {
 
         $result = call_user_func_array(array($this->delegate, $this->actionName), $parameters);
 
-        //Check result type...
-
-        return json_decode(json_encode($result), true);
+        return !is_scalar($result) ? json_decode(json_encode($result), true) : $result;
     }
 
     private function checkParameters($arguments) {
