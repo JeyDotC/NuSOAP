@@ -36,6 +36,77 @@ $server->register(array(
 
 The previous behavior still available.
 
+### Added Autodiscover for service description! ###
+
+Now is possible to describe your services as PHP classes, nusoap will generate the
+WSDL for you. All you have to do is to document your class and make use of the new
+nusoap_server_autodiscover class.
+
+```php
+<?php
+
+// Describe your complex types:
+class MyModel {
+
+    /**
+     * Document the class's properties, complex types are also allowed!
+     * @var string
+     */
+    public $value;
+
+    /**
+     * The correct WSDL type will be determined using the documentation, if type is mixed
+     * or is omitted autodiscover will fallback to `anyType`
+     * @var int
+     */
+    public $secondValue;
+
+}
+
+// Describe your service
+class MyService {
+
+    /**
+     * Document your methods, they will have the correct wsdl type based on
+     * documentation.
+     * @param MyModel $parameter1
+     * @return string
+     */
+    function myServiceMethod(MyModel $parameter1) {
+        return "Success";
+    }
+
+    /**
+     * Arrays are mapped too! there are four types of array notation:
+     * array[type], array<type>, type[] and array (the last one is the same as array[mixed], array<mixed> or mixed[])
+     * 
+     * @param array[\MyModel] $param
+     * @return array<\MyModel>
+     */
+    function arrayMethod($param) {
+        return $param;
+    }
+}
+
+//Create a new nusoap_server_autodiscover object with the usual namespace parameter and
+//a second parameter that will be your service, this class receives either an instance
+//of your service, the service's class name or a ReflectionClass instance for your service.
+$server = new nusoap_server_autodiscover($myNamespace, new MyService());
+
+//Generate the service definition (this will also register your service to respond to the SOAP calls)
+$server->generate()
+//Do the magic.
+        ->service(isset($GLOBALS['HTTP_RAW_POST_DATA']) ? $GLOBALS['HTTP_RAW_POST_DATA'] : '');
+exit();
+?>
+```
+
+Refer to `samples/server_autodiscover.php` for a more advanced example.
+
+#### TODO ####
+
+* Check for mandatory and optional properties and parameters.
+
 ### Private and protected things are now actually private and protected ###
 
 There were a lot of methods and attributes marked as private or protected but

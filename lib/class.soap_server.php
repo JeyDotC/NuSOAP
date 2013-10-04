@@ -150,7 +150,7 @@ class nusoap_server extends nusoap_base {
 
     /**
      * wsdl instance (if one)
-     * @var mixed
+     * @var wsdl
      */
     public $wsdl = false;
 
