@@ -50,15 +50,15 @@ class nusoap_server_autodiscover extends soap_server {
         }
     }
 
-    public function generate($endPointStyle = self::ENDPOINT_USE_NAMESPACE, $endpoint=false) {
+    public function generate($endPointStyle = self::ENDPOINT_USE_NAMESPACE, $endpoint = false) {
         $this->serviceInstance = $this->class->newInstance();
 
-        if($endPointStyle == self::ENDPOINT_USE_NAMESPACE){
+        if ($endPointStyle == self::ENDPOINT_USE_NAMESPACE) {
             $endpoint = $this->uri;
-        }else if($endPointStyle == self::ENDPOINT_GESS_FROM_REQUEST){
+        } else if ($endPointStyle == self::ENDPOINT_GESS_FROM_REQUEST) {
             $endpoint = false;
         }
-        
+
         $this->configureWSDL($this->name, $this->uri, $endpoint);
         $this->wsdl->bindings[$this->name . 'Binding']['portType'] = $this->name;
 
@@ -71,8 +71,11 @@ class nusoap_server_autodiscover extends soap_server {
         $methods = $this->class->getMethods(ReflectionMethod::IS_PUBLIC & ~ReflectionMethod::IS_STATIC);
 
         foreach ($methods as /* @var $method ReflectionMethod */ $method) {
-            $metadata = nusoap_comment_parser::parse($method->getDocComment());
-            $this->registerServiceMethod($method, $metadata);
+            //Ignore construtor.
+            if ($method->name != "__construct" && $method->name != $this->class->getShortName()) {
+                $metadata = nusoap_comment_parser::parse($method->getDocComment());
+                $this->registerServiceMethod($method, $metadata);
+            }
         }
     }
 
